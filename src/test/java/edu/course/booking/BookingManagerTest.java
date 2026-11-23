@@ -193,5 +193,78 @@ static Stream<Arguments> invalidBookingRequests() {
     );
 }
 
+@ParameterizedTest(name = "{0}")
+@MethodSource("validBoundaryRequests")
+void validBoundaryBookingsShouldCalculateCorrectTotal(
+        String scenario,
+        int quantity,
+        int price,
+        long expectedTotal) {
+
+    BookingRequest request =
+            new BookingRequest("C001", "E001", quantity, price);
+
+    when(paymentGateway.processPayment("C001", expectedTotal))
+            .thenReturn(Optional.of("TXN001"));
+
+    BookingResult result = bookingManager.book(request);
+
+    assertEquals(BookingResult.Status.SUCCESS, result.status());
+    assertEquals("TXN001", result.transactionId());
+
+    Booking expectedBooking =
+            new Booking(request, expectedTotal, "TXN001");
+
+    verify(eventRepository).isSoldOut("E001");
+    verify(paymentGateway).processPayment("C001", expectedTotal);
+    verify(eventRepository).saveBooking(expectedBooking);
+    verify(notificationService).sendConfirmation(expectedBooking);
+}
+
+static Stream<Arguments> validBoundaryRequests() {
+    return Stream.of(
+            Arguments.of(
+                    "Minimum quantity",
+                    1, 1500, 1500L
+            ),
+            Arguments.of(
+                    "Maximum quantity",
+                    5, 1500, 7500L
+            ),
+            Arguments.of(
+                    "Large price without integer overflow",
+                    5, Integer.MAX_VALUE, 10737418235L
+            )
+    );
+}
+
+@ParameterizedTest
+@org.junit.jupiter.params.provider.ValueSource(
+        strings = {"", "   "}
+)
+void invalidTransactionIdShouldNotConfirmBooking(
+        String transactionId) {
+
+    BookingRequest request =
+            new BookingRequest("C001", "E001", 2, 1500);
+
+    when(paymentGateway.processPayment("C001", 3000L))
+            .thenReturn(Optional.of(transactionId));
+
+    BookingResult result = bookingManager.book(request);
+
+    assertEquals(
+            BookingResult.Status.PAYMENT_FAILED,
+            result.status()
+    );
+
+    assertEquals(null, result.transactionId());
+
+    verify(eventRepository).isSoldOut("E001");
+    verify(paymentGateway).processPayment("C001", 3000L);
+    verify(eventRepository, never()).saveBooking(any());
+    verifyNoInteractions(notificationService);
+}
+
 
 }

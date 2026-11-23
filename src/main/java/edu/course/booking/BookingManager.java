@@ -52,14 +52,24 @@ public BookingResult book(BookingRequest request) {
             totalAmountInCents
     );
 
-    if (paymentResult.isEmpty()) {
-        return new BookingResult(
-                BookingResult.Status.PAYMENT_FAILED,
-                null
-        );
-    }
+    
 
-    String transactionId = paymentResult.orElseThrow();
+if (paymentResult.isEmpty()) {
+    return new BookingResult(
+            BookingResult.Status.PAYMENT_FAILED,
+            null
+    );
+}
+
+String transactionId = paymentResult.orElseThrow();
+
+if (transactionId.isBlank()) {
+    return new BookingResult(
+            BookingResult.Status.PAYMENT_FAILED,
+            null
+    );
+}
+
 
     Booking booking = new Booking(
             request,
