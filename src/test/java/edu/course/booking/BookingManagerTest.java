@@ -15,6 +15,10 @@ import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.never;
 import static org.mockito.ArgumentMatchers.any;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.Arguments;
+import java.util.stream.Stream;
 @ExtendWith(MockitoExtension.class)
 class BookingManagerTest {
 
@@ -127,6 +131,66 @@ void failedPaymentShouldNotSaveBookingOrSendConfirmation() {
     verify(eventRepository, never()).saveBooking(any());
 
     verifyNoInteractions(notificationService);
+}
+
+@ParameterizedTest(name = "{0}")
+@MethodSource("invalidBookingRequests")
+void invalidBookingRequestShouldBeRejected(
+        String scenario,
+        BookingRequest request) {
+
+    BookingResult result = bookingManager.book(request);
+
+    assertEquals(
+            BookingResult.Status.INVALID_REQUEST,
+            result.status()
+    );
+
+    assertEquals(null, result.transactionId());
+
+    verifyNoInteractions(
+            paymentGateway,
+            eventRepository,
+            notificationService
+    );
+}
+
+static Stream<Arguments> invalidBookingRequests() {
+    return Stream.of(
+            Arguments.of(
+                    "Null customer ID",
+                    new BookingRequest(null, "E001", 2, 1500)),
+            Arguments.of(
+                    "Empty customer ID",
+                    new BookingRequest("", "E001", 2, 1500)),
+            Arguments.of(
+                    "Whitespace customer ID",
+                    new BookingRequest("   ", "E001", 2, 1500)),
+            Arguments.of(
+                    "Null event ID",
+                    new BookingRequest("C001", null, 2, 1500)),
+            Arguments.of(
+                    "Empty event ID",
+                    new BookingRequest("C001", "", 2, 1500)),
+            Arguments.of(
+                    "Whitespace event ID",
+                    new BookingRequest("C001", "   ", 2, 1500)),
+            Arguments.of(
+                    "Zero tickets",
+                    new BookingRequest("C001", "E001", 0, 1500)),
+            Arguments.of(
+                    "Negative tickets",
+                    new BookingRequest("C001", "E001", -1, 1500)),
+            Arguments.of(
+                    "More than five tickets",
+                    new BookingRequest("C001", "E001", 6, 1500)),
+            Arguments.of(
+                    "Zero ticket price",
+                    new BookingRequest("C001", "E001", 2, 0)),
+            Arguments.of(
+                    "Negative ticket price",
+                    new BookingRequest("C001", "E001", 2, -100))
+    );
 }
 
 
