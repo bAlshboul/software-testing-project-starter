@@ -1,6 +1,6 @@
 # Software Testing Semester Project Starter
 
-This repository contains the setup and templates for the semester Ticket Booking System project. It provides configuration and guidance only. It does **not** provide solutions to the assessed requirements.
+This repository contains the setup, templates, and initial Java structure for the semester Ticket Booking System project. Use the [Milestone 1 worksheet](docs/guides/MILESTONE_1_WORKSHEET.md) to develop the booking behaviors and record the test evidence.
 
 ## Quick start
 
