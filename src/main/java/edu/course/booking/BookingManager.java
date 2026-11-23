@@ -16,8 +16,29 @@ public final class BookingManager {
         this.eventRepository = Objects.requireNonNull(eventRepository);
     }
 
-    public BookingResult book(BookingRequest request) {
-        // Add each booking behavior as its first test is developed.
-        throw new UnsupportedOperationException("Booking workflow has not been implemented");
-    }
+    
+
+public BookingResult book(BookingRequest request) {
+    long totalAmountInCents =
+            (long) request.ticketQuantity() * request.pricePerTicketInCents();
+
+    String transactionId = paymentGateway
+            .processPayment(request.customerId(), totalAmountInCents)
+            .orElseThrow();
+
+    Booking booking = new Booking(
+            request,
+            totalAmountInCents,
+            transactionId
+    );
+
+    eventRepository.saveBooking(booking);
+    notificationService.sendConfirmation(booking);
+
+    return new BookingResult(
+            BookingResult.Status.SUCCESS,
+            transactionId
+    );
+}
+
 }
