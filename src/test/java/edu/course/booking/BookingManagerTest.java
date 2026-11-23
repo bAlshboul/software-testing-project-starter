@@ -13,6 +13,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.never;
+import static org.mockito.ArgumentMatchers.any;
 @ExtendWith(MockitoExtension.class)
 class BookingManagerTest {
 
@@ -74,6 +76,33 @@ void bookingWithZeroTicketsShouldBeRejected() {
             eventRepository,
             notificationService
     );
+}
+
+@Test
+void soldOutEventShouldRejectBookingWithoutPayment() {
+    BookingRequest request =
+            new BookingRequest("C001", "E001", 2, 1500);
+
+    when(eventRepository.isSoldOut("E001"))
+            .thenReturn(true);
+
+    BookingResult result = bookingManager.book(request);
+
+    assertEquals(
+            BookingResult.Status.SOLD_OUT,
+            result.status()
+    );
+
+    assertEquals(null, result.transactionId());
+
+    verify(eventRepository).isSoldOut("E001");
+
+    verifyNoInteractions(
+            paymentGateway,
+            notificationService
+    );
+
+    verify(eventRepository, never()).saveBooking(any());
 }
 
 }

@@ -25,6 +25,12 @@ if (request.ticketQuantity() <= 0) {
             null
     );
 }
+if (eventRepository.isSoldOut(request.eventId())) {
+    return new BookingResult(
+            BookingResult.Status.SOLD_OUT,
+            null
+    );
+}
     long totalAmountInCents =
             (long) request.ticketQuantity() * request.pricePerTicketInCents();
 
