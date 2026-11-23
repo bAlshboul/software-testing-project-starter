@@ -19,6 +19,12 @@ public final class BookingManager {
     
 
 public BookingResult book(BookingRequest request) {
+if (request.ticketQuantity() <= 0) {
+    return new BookingResult(
+            BookingResult.Status.INVALID_REQUEST,
+            null
+    );
+}
     long totalAmountInCents =
             (long) request.ticketQuantity() * request.pricePerTicketInCents();
 
