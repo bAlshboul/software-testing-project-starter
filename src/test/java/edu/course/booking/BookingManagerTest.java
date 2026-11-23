@@ -121,6 +121,7 @@ void soldOutEventShouldRejectBookingWithoutPayment() {
 verifyNoMoreInteractions(eventRepository);
 }
 
+
 @Test
 void failedPaymentShouldNotSaveBookingOrSendConfirmation() {
     BookingRequest request =
@@ -135,14 +136,15 @@ void failedPaymentShouldNotSaveBookingOrSendConfirmation() {
             BookingResult.Status.PAYMENT_FAILED,
             result.status()
     );
-
     assertEquals(null, result.transactionId());
 
-verify(eventRepository).isSoldOut("E001");
-    verify(eventRepository, never()).saveBooking(any());
+    verify(eventRepository).isSoldOut("E001");
+    verify(paymentGateway).processPayment("C001", 3000L);
 
+    verify(eventRepository, never()).saveBooking(any());
     verifyNoInteractions(notificationService);
-verifyNoMoreInteractions(eventRepository, paymentGateway);
+
+    verifyNoMoreInteractions(eventRepository, paymentGateway);
 }
 
 @ParameterizedTest(name = "{0}")
