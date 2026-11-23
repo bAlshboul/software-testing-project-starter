@@ -19,6 +19,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.Arguments;
 import java.util.stream.Stream;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 @ExtendWith(MockitoExtension.class)
 class BookingManagerTest {
 
@@ -59,8 +60,18 @@ class BookingManagerTest {
         Booking expectedBooking =
                 new Booking(request, 3000L, "TXN001");
 
-        verify(eventRepository).saveBooking(expectedBooking);
-        verify(notificationService).sendConfirmation(expectedBooking);
+        
+verify(eventRepository).isSoldOut("E001");
+verify(paymentGateway).processPayment("C001", 3000L);
+verify(eventRepository).saveBooking(expectedBooking);
+verify(notificationService).sendConfirmation(expectedBooking);
+
+verifyNoMoreInteractions(
+        eventRepository,
+        paymentGateway,
+        notificationService
+);
+
     }
 
 @Test
@@ -107,6 +118,7 @@ void soldOutEventShouldRejectBookingWithoutPayment() {
     );
 
     verify(eventRepository, never()).saveBooking(any());
+verifyNoMoreInteractions(eventRepository);
 }
 
 @Test
@@ -126,11 +138,11 @@ void failedPaymentShouldNotSaveBookingOrSendConfirmation() {
 
     assertEquals(null, result.transactionId());
 
-    verify(paymentGateway).processPayment("C001", 3000L);
-
+verify(eventRepository).isSoldOut("E001");
     verify(eventRepository, never()).saveBooking(any());
 
     verifyNoInteractions(notificationService);
+verifyNoMoreInteractions(eventRepository, paymentGateway);
 }
 
 @ParameterizedTest(name = "{0}")
