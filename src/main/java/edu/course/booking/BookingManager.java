@@ -1,7 +1,7 @@
 package edu.course.booking;
 
 import java.util.Objects;
-
+import java.util.Optional;
 public final class BookingManager {
     private final IPaymentGateway paymentGateway;
     private final INotificationService notificationService;
@@ -34,9 +34,22 @@ if (eventRepository.isSoldOut(request.eventId())) {
     long totalAmountInCents =
             (long) request.ticketQuantity() * request.pricePerTicketInCents();
 
-    String transactionId = paymentGateway
-            .processPayment(request.customerId(), totalAmountInCents)
-            .orElseThrow();
+   
+
+Optional<String> paymentResult = paymentGateway.processPayment(
+        request.customerId(),
+        totalAmountInCents
+);
+
+if (paymentResult.isEmpty()) {
+    return new BookingResult(
+            BookingResult.Status.PAYMENT_FAILED,
+            null
+    );
+}
+
+String transactionId = paymentResult.orElseThrow();
+
 
     Booking booking = new Booking(
             request,

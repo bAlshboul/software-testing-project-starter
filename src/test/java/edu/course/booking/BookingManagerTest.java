@@ -105,4 +105,29 @@ void soldOutEventShouldRejectBookingWithoutPayment() {
     verify(eventRepository, never()).saveBooking(any());
 }
 
+@Test
+void failedPaymentShouldNotSaveBookingOrSendConfirmation() {
+    BookingRequest request =
+            new BookingRequest("C001", "E001", 2, 1500);
+
+    when(paymentGateway.processPayment("C001", 3000L))
+            .thenReturn(Optional.empty());
+
+    BookingResult result = bookingManager.book(request);
+
+    assertEquals(
+            BookingResult.Status.PAYMENT_FAILED,
+            result.status()
+    );
+
+    assertEquals(null, result.transactionId());
+
+    verify(paymentGateway).processPayment("C001", 3000L);
+
+    verify(eventRepository, never()).saveBooking(any());
+
+    verifyNoInteractions(notificationService);
+}
+
+
 }
